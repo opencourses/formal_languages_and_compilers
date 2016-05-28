@@ -5,8 +5,11 @@ the course of [Formal Languages and Compilers](http://staff.polito.it/silvano.ri
 
 ## Useful links:
 [Course Material](http://staff.polito.it/silvano.rivoira/FormalLanguagesCompilers/materials.htm)
+
 [Course Exercises and Laboratories](http://www.skenz.it/compilers/)
+
 [Jflex Manual](http://www.skenz.it/compilers/resources/jflex.pdf)
+
 [Cup Manual](http://www.skenz.it/compilers/resources/cupManual.html)
 
 [Unofficial course notes](https://github.com/terrinoni/FormalLanguagesAndCompilers-Notes)
