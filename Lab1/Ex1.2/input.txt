@@ -1,0 +1,6 @@
+http://www.mysite.it/file.html
+ftp://10.9.9.71/prova.zip
+http://another.site.com/%7Euser/index.html#rif33
+nttp://news.site.ch:8181/data/
+
+
