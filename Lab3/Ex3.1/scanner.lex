@@ -5,20 +5,20 @@ import java_cup.runtime.*;
 %unicode
 %class scanner
 %line
-%coloumn
+%column
 
 %{
-    private void debug(String str) {
+    private void debug(String str){
         if (true) {
             System.out.println(str);
         }
     }
 
     private Symbol symbol(int type) {
-        return new Symbol(type, yyline, yycoloumn);
+        return new Symbol(type, yyline, yycolumn);
     }
     private Symbol symbol(int type, Object value) {
-        return new Symbol(type, yyline, yycoloumn, value);
+        return new Symbol(type, yyline, yycolumn, value);
     }
 %}
 
@@ -54,12 +54,12 @@ double      = (([0-9]+\.[0-9]*) | ([0-9]*\.[0-9]+)) (e|E('+'|'-')?[0-9]+)?
 "int"       {debug("INT_TYPE"); return symbol(sym.INT_TYPE);}
 "double"    {debug("DOUBLE_TYPE"); return symbol(sym.DOUBLE_TYPE);}
 
-print       {debug("OR"); return symbol(sym.OR);}
-if          {debug("OR"); return symbol(sym.OR);}
-while       {debug("OR"); return symbol(sym.OR);}
-else        {debug("OR"); return symbol(sym.OR);}
-;           {debug("OR"); return symbol(sym.OR);}
-:           {debug("OR"); return symbol(sym.OR);}
+print       {debug("PRINT"); return symbol(sym.PRINT);}
+if          {debug("IF"); return symbol(sym.IF);}
+while       {debug("WHILE"); return symbol(sym.WHILE);}
+else        {debug("ELSE"); return symbol(sym.ELSE);}
+;           {debug("SCOL"); return symbol(sym.SCOL);}
+,           {debug("CM"); return symbol(sym.CM);}
 
 {id}        {debug("ID"); return symbol(sym.ID, yytext());}
 {integer}   {debug("INT"); return symbol(sym.INT, new Integer(yytext()));}

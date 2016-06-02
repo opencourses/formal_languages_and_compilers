@@ -27,6 +27,6 @@ while(pos > 0){
 /* Stampa risultati */
 i = 0;
 while(i<5){
-  print (x[i]);
+  print x[i];
 	i = i + 1; 
 }
