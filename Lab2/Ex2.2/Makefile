@@ -2,7 +2,7 @@ default: scanner parser
 	javac *.java
 
 scanner:
-	jflex scanner.jflex
+	jflex scanner.lex
 
 parser:
 	java java_cup.Main -parser parser parser.cup
