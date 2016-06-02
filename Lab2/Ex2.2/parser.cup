@@ -1,0 +1,23 @@
+import java_cup.runtime.*;
+
+terminal        LETTER, UINT, ARROW, SEP, COL, SCOL, COMMA, LI, LS, AV, BO, SO, 
+                NAME, ISBN, DATE;
+
+non terminal    writers_list, users_list, writer_item, book_list, book_item, 
+                state_genre, position, user_item, loan_list, file;
+
+start with      file;
+
+file        ::= writers_list SEP users_list 
+                {: System.out.println("File correctly recognized"); :};
+
+writers_list::= writers_list writer_item | writer_item;
+writer_item ::= NAME ARROW book_list SCOL;
+book_list   ::= book_list COMMA book_item | book_item;
+book_item   ::= ISBN COL NAME COL UINT COL state_genre position;
+state_genre ::= LI AV | LI SO | LS AV | LS BO | LS SO;
+position    ::= UINT | UINT LETTER;
+
+users_list  ::= users_list user_item | user_item;
+user_item   ::= NAME COL loan_list SCOL;
+loan_list   ::= loan_list COMMA DATE ISBN | DATE ISBN;

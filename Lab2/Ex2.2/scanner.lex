@@ -1,24 +1,24 @@
+import java_cup.runtime.*;
 %%
 
-%class ex2_2
+%unicode
+%class scanner
 %cup
 
 nl          = (\n|\r|\n\r)
-char        = ([A-Za-z])
+letter      = ([A-Za-z ])
 number      = ([0-9])
-word        = {char}+
+word        = {letter}+
 uint        = {number}+
 
-arrow       = "->"
-quote       = \"
 separator   = \%\%
 comma       = \,
 col         = \:
 scol        = \;
 
-name        = {quote}{word}{quote}
+name        = \"[A-Za-z0-9 .,:]+\"
 hex         = ([A-F0-9])
-isbn        = ({number}{2}\-){2}{hex}{5}\-({char}|{number})
+isbn        = ({number}{2}\-){2}{hex}{5}\-({letter}|{number})
 
 LI          = ("li"|"LI")
 LS          = ("ls"|"LS")
@@ -26,8 +26,8 @@ AV          = ("av"|"AV")
 BO          = ("bo"|"BO")
 SO          = ("so"|"SO")
 
-day         = ([0-2][0-9]|3[0-1])
-month       = ([0-9]|1[0-2])
+day         = (0[1-9]|[1-2][0-9]|3[0-1])
+month       = (0[1-9]|1[0-2])
 year        = {number}{4}
 date        = {day}\/{month}\/{year}
 
@@ -42,10 +42,12 @@ date        = {day}\/{month}\/{year}
 
 %%
 
-{char}          {println("CHAR");       return new Symbol(sym.CHAR);}
+{nl}|" "|\t     {;}
+
+{letter}        {println("LETTER");     return new Symbol(sym.LETTER);}
 {uint}          {println("UINT");       return new Symbol(sym.UINT);}
 
-{arrow}         {println("ARROW");      return new Symbol(sym.ARROW);}
+"->"            {println("ARROW");      return new Symbol(sym.ARROW);}
 {separator}     {println("SEP");        return new Symbol(sym.SEP);}
 {col}           {println("COL");        return new Symbol(sym.COL);}
 {scol}          {println("SCOL");       return new Symbol(sym.SCOL);}
@@ -62,5 +64,5 @@ date        = {day}\/{month}\/{year}
 
 {date}          {println("DATE");       return new Symbol(sym.DATE);}
 
-{nl}            {;}
-.               {println("Error, char not recognized: "+yytext();}
+
+.               {println("Error, letter not recognized: "+yytext());}
