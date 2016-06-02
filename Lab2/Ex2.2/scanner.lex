@@ -26,10 +26,10 @@ AV          = ("av"|"AV")
 BO          = ("bo"|"BO")
 SO          = ("so"|"SO")
 
-DAY         = ([0-2][0-9]|3[0-1])
-MONTH       = ([0-9]|1[0-2])
-YEAR        = {number}{4}
-DATE        = {DAY}\/{MONTH}\/{YEAR}
+day         = ([0-2][0-9]|3[0-1])
+month       = ([0-9]|1[0-2])
+year        = {number}{4}
+date        = {day}\/{month}\/{year}
 
 %{
     private static final boolean DEBUG = true;
@@ -61,3 +61,6 @@ DATE        = {DAY}\/{MONTH}\/{YEAR}
 {isbn}          {println("ISBN");       return new Symbol(sym.ISBN);}
 
 {date}          {println("DATE");       return new Symbol(sym.DATE);}
+
+{nl}            {;}
+.               {println("Error, char not recognized: "+yytext();}

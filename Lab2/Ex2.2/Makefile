@@ -4,8 +4,8 @@ default: scanner parser
 draw: scanner parser_draw
 	javac *.java
 
-scanner: scanner.jflex
-	jflex scanner.jflex
+scanner: scanner.lex
+	jflex scanner.lex
 
 parser: parser.cup
 	java java_cup.Main parser.cup
