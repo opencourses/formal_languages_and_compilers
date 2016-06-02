@@ -1,0 +1,13 @@
+"Hesse Herman" -> 88-17-83457-X:"Narciso e Boccadoro":200:LS SO 127 A,
+                  88-14-24B43-2:"Siddhartha" : 236 : LS SO 127 B,
+                  88-12-34AA3-B:"Lupo della steppa, Il":262:LS SO 127 C;
+"Baricco Alessandro"-> 88-17-10625-9:"Seta":100:LI AV 1,
+                       88-17-86563-X:"City":319:LI AV 2 A;
+"F. Christiane"-> 88-17-11520-7:"Noi, i ragazzi dello zoo di Berlino":346:LS BO 1;
+%%
+"Giovanni": 02/10/2006 88-17-11520-7;
+"Stefano" : 12/04/2007 88-17-83457-X,
+            20/09/2007 88-14-24B43-2,
+            29/09/2007 88-17-11520-7;
+"Giovanni": 02/10/2007 88-17-10625-9,
+            02/10/2007 88-17-86563-X;
