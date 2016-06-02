@@ -1,3 +1,6 @@
 ex*.java
-ex*.java~
-ex*.class
+scanner.java
+parser.java
+sym.java
+*.java~
+*.class
