@@ -1,0 +1,12 @@
+/* Logic program example */
+/* list input */
+member(X,cons(X,_)).
+member(X,cons(_,Y)):-
+member(X,Y).
+/* starting list */
+start_list(cons(a,cons(b,cons(c,nil)))).
+/* interrogation */
+?- start_list(L), member(X,L), goal(X).
+/* goal */
+goal(c).
+
