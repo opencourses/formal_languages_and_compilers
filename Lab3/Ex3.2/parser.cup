@@ -1,0 +1,130 @@
+import java_cup.runtime.*;
+import java.io.*;
+
+
+// TODO: define the error parser code
+parser code {:
+
+    // Redefinition of error functions
+    public void report_error(String message, Object info) {
+        System.err.print("ERROR: Syntax error");
+        if (info instanceof Symbol)
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(" (linea "+line+", colonna "+column+"): ");
+            } else System.err.print(": ");
+        else System.err.print(": ");
+    }
+:};
+
+
+
+
+// Terminal tokens
+terminal INT, DOUBLE, CHAR, FLOAT, STRING;
+terminal INT_TYPE, DOUBLE_TYPE, CHAR_TYPE, FLOAT_TYPE;
+terminal SIGNED, UNSIGNED, REGISTER, LONG, SHORT, EXTERN, STATIC;
+terminal RO, RC, SO, SC, BO, BC, PLUS, MOD, MINUS, STAR, DIV, UMINUS;
+terminal EQ, GT, LT, GE, LE, AND, OR, NOT, S, C, COMMA;
+terminal WHILE, DO, FOR, IF, ELSE, SWITCH, CASE, DEFAULT, RETURN;
+terminal TOKEN;
+// Non terminal tokens
+non terminal prog, cmpt_list, cmpt_item, declaration, decl_list_i, item, value;
+non terminal function, arguments, arg_list, arg_item, string_list;
+non terminal type, type_t, mod_item, mem_mod, sign_mod, len_mod, star_list;
+non terminal name, id, content;
+non terminal decl_list, stmt_list, stmt_item;
+non terminal assignment, exp, expression;
+non terminal cicle, while, do_while, for;
+non terminal condition, if;
+non terminal func_call, exp_list, return;
+// Precedence of operators
+precedence left OR;
+precedence left AND;
+precedence left NOT;
+precedence left LE, LT, GE, GT, EQ;
+precedence left PLUS, MINUS;
+precedence left STAR, DIV;
+precedence left UMINUS;
+
+// Grammar start
+
+start with prog;
+
+prog        ::= cmpt_list {: System.out.println("The program is correct"); :}; 
+cmpt_list   ::= cmpt_list cmpt_item | cmpt_item;
+cmpt_item   ::= function | declaration;
+
+declaration ::= type decl_list_i S;
+decl_list_i ::= decl_list_i COMMA item
+            |   item;
+
+item        ::= id
+            |   id EQ value
+			|   id EQ BO string_list BC;
+string_list	::= string_list COMMA STRING | STRING; 
+value       ::= INT| DOUBLE| CHAR| FLOAT | STRING; // Add the value of the string
+
+function    ::= type name arguments BO content BC
+            |   type name arguments S;
+
+arguments   ::= RO arg_list RC | RO RC;
+arg_list    ::= arg_list COMMA arg_item | arg_item;
+arg_item    ::= type id;
+
+type        ::= mod_item type_t star_list
+            |   mod_item type_t
+            |   type_t star_list
+            |   type_t;
+type_t      ::= INT_TYPE| DOUBLE_TYPE| CHAR_TYPE| FLOAT_TYPE;
+mod_item    ::= mem_mod sign_mod len_mod
+            |   mem_mod sign_mod | mem_mod len_mod
+            |   sign_mod len_mod
+            |   mem_mod | sign_mod | len_mod;
+mem_mod     ::= REGISTER | EXTERN | STATIC;
+sign_mod    ::= SIGNED | UNSIGNED;
+len_mod     ::= LONG LONG | SHORT SHORT | LONG | SHORT;
+star_list   ::= star_list STAR | STAR;
+
+name        ::= TOKEN;
+id          ::= name | name SO INT SC | name SO id SC | name SO SC;
+content     ::= decl_list stmt_list | decl_list | stmt_list;
+decl_list   ::= decl_list declaration | declaration;
+stmt_list   ::= stmt_list stmt_item | stmt_item;
+stmt_item   ::= assignment S | cicle | condition | return S;
+
+assignment  ::= id EQ expression | expression;
+exp         ::= id | value | func_call;
+expression  ::= exp
+            /*  Logical expressions */
+            |   exp AND exp
+            |   exp OR exp
+            |   NOT exp
+            /*  Comparison expressions */
+            |   exp EQ EQ exp
+			| 	exp NOT EQ exp
+            |   exp LT exp
+            |   exp GT exp
+            |   exp GE exp
+            |   exp LE exp
+            /*  Arithmentic expressions */
+			| 	exp PLUS PLUS
+            |   exp PLUS exp
+            |   exp MINUS exp
+            |   exp STAR exp
+            |   exp DIV exp
+            |   RO exp RC
+            |   MINUS value %prec UMINUS;
+
+cicle       ::= while | for| do_while S;
+while       ::= WHILE RO expression RC BO stmt_list BC;
+do_while    ::= DO BO stmt_list BC WHILE RO expression RC;
+for         ::= FOR RO assignment S expression S assignment RC BO stmt_list BC;
+
+condition   ::= if;    // TODO add switch and if_else
+if          ::= IF RO expression RC BO stmt_list BC;
+
+func_call	::= TOKEN RO exp_list RC;
+exp_list	::= exp_list COMMA expression | expression;
+return		::= RETURN expression;

@@ -10,24 +10,32 @@ import java_cup.runtime.*;
 
 nl              = \n|\r|\n\r
 space           = [ \t]
+token           = ([a-zA-Z][a-zA-Z0-9_\-]*)
+int_value       = ([1-9][0-9]*|0)
+double_value    = (([0-9]+\.[0-9]*) | ([0-9]*\.[0-9]+)) (e|E('+'|'-')?[0-9]+)?
+string          = \"[A-Za-z0-9_\-\*\+\.,;:]*\"
+
 
 %{
     private void debug(String str){
         System.out.println(str);
     }
+	private Symbol symbol(int type) {
+		return new Symbol(type, yyline, yycolumn);
+	}
+  	private Symbol symbol(int type, Object value) {
+    	return new Symbol(type, yyline, yycolumn, value);
+  	}
 
-    private Symbol symbol(int s) {
-        return new Symbol(s, yyline, yycolumn);
-    }
 %}
 
 
 %%
 
-"int"                   {debug("INT"); return symbol(sym.INT);}
-"double"                {debug("DOUBLE"); return symbol(sym.DOUBLE);}
-"char"                  {debug("CHAR"); return symbol(sym.CHAR);}
-"float"                 {debug("FLOAT"); return symbol(sym.FLOAT);}
+"int"                   {debug("INT_TYPE"); return symbol(sym.INT_TYPE);}
+"double"                {debug("DOUBLE_TYPE"); return symbol(sym.DOUBLE_TYPE);}
+"char"                  {debug("CHAR_TYPE"); return symbol(sym.CHAR_TYPE);}
+"float"                 {debug("FLOAT_TYPE"); return symbol(sym.FLOAT_TYPE);}
 
 "signed"                {debug("SIGNED"); return symbol(sym.SIGNED);}
 "unsigned"              {debug("UNSIGNED"); return symbol(sym.UNSIGNED);}
@@ -59,8 +67,23 @@ space           = [ \t]
 "|"                     {debug("OR"); return symbol(sym.OR);}
 "!"                     {debug("NOT"); return symbol(sym.NOT);}
 ";"                     {debug("S"); return symbol(sym.S);}
-":"                     {debug("C"); return symbol(sym.S);}
-","                     {debug("COMMA"); return symbol(sym.C);}
+":"                     {debug("C"); return symbol(sym.C);}
+","                     {debug("COMMA"); return symbol(sym.COMMA);}
+
+"while"                 {debug("WHILE"); return symbol(sym.WHILE);}
+"do"                    {debug("DO"); return symbol(sym.DO);}
+"for"                   {debug("FOR"); return symbol(sym.FOR);}
+"if"                    {debug("IF"); return symbol(sym.IF);}
+"else"                  {debug("ELSE"); return symbol(sym.ELSE);}
+"switch"                {debug("SWITCH"); return symbol(sym.SWITCH);}
+"case"                  {debug("CASE"); return symbol(sym.CASE);}
+"default"               {debug("DEFAULT"); return symbol(sym.DEFAULT);}
+"return"                {debug("RETURN"); return symbol(sym.RETURN);}
+
+{token}                 {debug("TOKEN"); return symbol(sym.TOKEN);}
+{int_value}             {debug("INT"); return symbol(sym.INT);}
+{double_value}          {debug("DOUBLE"); return symbol(sym.DOUBLE);}
+{string}                {debug("STRING"); return symbol(sym.STRING);}
 
 {space}|{nl}            {;}
 "/*" ~ "*/"             {;}
