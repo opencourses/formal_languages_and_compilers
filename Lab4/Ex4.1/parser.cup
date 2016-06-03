@@ -3,7 +3,7 @@ import java_cup.runtime.*;
 // Print the line where an error occurred
 parser code {:
     public static boolean fact = false;
-    public static boolean error = false;
+    public static int error = 0;
 	
 	@Override
 	public void report_error(String message, Object info) {
@@ -12,11 +12,12 @@ parser code {:
             if (((Symbol)info).left != -1){
                 int line = (((Symbol)info).left)+1;
                 int column = (((Symbol)info).right)+1;
-                System.err.print(" (row "+line+", column "+column+"): "+message);
-            } else System.err.print(": "+message);
-        else System.err.print(": "+message);
+                System.err.println(" (row "+line+", column "+column+"): "+message);
+            } else System.err.println(": "+message);
+        else System.err.println(": "+message);
     }
-    //@Override
+
+    @Override
     public void syntax_error(Symbol cur_token){}
 	
 	// Return actual symbol
@@ -24,6 +25,9 @@ parser code {:
     */
     public Symbol getToken() {
         return ((Symbol)stack.elementAt(tos));
+    }
+    public void report(String message) {
+        report_error(message, getToken());
     }
 :};
 
@@ -38,19 +42,37 @@ non terminal pred_list, predicate, arg_list, arg_item;
 // Start the parser
 start with ok;
 
-ok          ::= program     {:
-                                System.out.println("The program is correct");
-                            :};
+ok          ::= program {:
+                            if (parser.fact == false) {
+                                System.err.println("you must give at least one fact");
+                                return null;
+                            }
+                            if (parser.error != 0) {
+                                System.err.println("Total number of errors: "+parser.error);
+                                return null;
+                            }
+                            System.out.println("The program is correct");
+                        :};
 program     ::= elem_list question elem_list;
 elem_list   ::= elem_list elem_item | elem_item;
 elem_item   ::= fact | rule;
 
-fact        ::= predicate DOT;
+fact        ::= predicate DOT   {: parser.fact = true; :}
+            |   error DOT       
+            {:  parser.error++; 
+                parser.report("Error in the predicate");;
+            :};
 rule        ::= predicate END_RULE pred_list DOT;
-question    ::= START_QUESTION pred_list DOT;
+question    ::= START_QUESTION pred_list DOT
+            |   START_QUESTION error DOT {: parser.error++;
+                                            parser.report("Error in the interrogation");
+                                         :};
 
 pred_list   ::= pred_list COMMA predicate | predicate;
-predicate   ::= ATOM RO arg_list RC | ATOM;
+predicate   ::= ATOM RO arg_list RC | ATOM
+            |   ATOM RO error RC    {:  parser.error++;
+                                        parser.report("Error in the argument");
+                                    :};
 
 arg_list    ::= arg_list COMMA arg_item | arg_item;
 arg_item    ::= predicate | VARIABLE;

@@ -9,7 +9,8 @@ import java_cup.runtime.*;
 
 %{
     private void debug(String str){
-        System.out.println(str);
+        // Decomment this to get the scanner debug
+        //System.out.println(str);
     }
     private Symbol symbol(int sym){
         return new Symbol(sym, yyline, yycolumn);
@@ -41,5 +42,6 @@ variable        = [A-Z_]([A-Za-z0-9_])*
 
 {nl}|" "        {;}
 "/*" ~ "*/"     {debug("COMMENT");}
-.               {System.out.println("Error, char not recognized: "+yytext()
-                 + " in line " + yyline + " and column " + yycolumn); }
+.               {System.out.println("WARNING: char not recognized: "+yytext()
+                 + " (row " + (yyline+1) + " column " + (yycolumn+1)+")"); 
+                return symbol(sym.error); }
