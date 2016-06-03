@@ -1,0 +1,56 @@
+import java_cup.runtime.*;
+
+// Print the line where an error occurred
+parser code {:
+    public static boolean fact = false;
+    public static boolean error = false;
+	
+	@Override
+	public void report_error(String message, Object info) {
+        System.err.print("ERROR: Syntax error");
+        if (info instanceof Symbol)
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(" (row "+line+", column "+column+"): "+message);
+            } else System.err.print(": "+message);
+        else System.err.print(": "+message);
+    }
+    //@Override
+    public void syntax_error(Symbol cur_token){}
+	
+	// Return actual symbol
+    /* It returns the object of type Symbol in the top of the parser stack.
+    */
+    public Symbol getToken() {
+        return ((Symbol)stack.elementAt(tos));
+    }
+:};
+
+
+// List of terminal symbols
+terminal DOT, END_RULE, START_QUESTION, COMMA, RO, RC, ATOM, VARIABLE;
+// List of non terminal symbol
+non terminal ok, program, elem_list, elem_item, fact, rule, question;
+non terminal pred_list, predicate, arg_list, arg_item;
+
+
+// Start the parser
+start with ok;
+
+ok          ::= program     {:
+                                System.out.println("The program is correct");
+                            :};
+program     ::= elem_list question elem_list;
+elem_list   ::= elem_list elem_item | elem_item;
+elem_item   ::= fact | rule;
+
+fact        ::= predicate DOT;
+rule        ::= predicate END_RULE pred_list DOT;
+question    ::= START_QUESTION pred_list DOT;
+
+pred_list   ::= pred_list COMMA predicate | predicate;
+predicate   ::= ATOM RO arg_list RC | ATOM;
+
+arg_list    ::= arg_list COMMA arg_item | arg_item;
+arg_item    ::= predicate | VARIABLE;
