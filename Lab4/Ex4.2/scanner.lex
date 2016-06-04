@@ -17,11 +17,12 @@ string          = \"[A-Za-z0-9_\-\*\+\.,;:]*\"
 
 
 %{
+    private static final boolean _DEBUG = false;
     private void debug(String str){
-        System.out.println(str);
+        if (_DEBUG) { System.out.println(str); }
     }
     private void debug(String token, String value) {
-        System.out.println(token+": "+value);
+        if (_DEBUG) { System.out.println(token+": "+value); }
     }
 	private Symbol symbol(int type) {
 		return new Symbol(type, yyline, yycolumn);

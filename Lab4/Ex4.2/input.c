@@ -1,14 +1,13 @@
-/*extern int *fn1(int a, int b, char *c[]);
+extern int *fn1(int a, int b, char *c[]);
 register int ff;
 
 int fn2() {
-  	static unsigned long int k = 1, i;
+  	static unsigned long intiadf k = 1, i;
   	for(i = 0; i < 10; i++) {
 		k-1;
 	}
 }
 
-*/
 int function () {
     if (a == b) {
         k = k -1;

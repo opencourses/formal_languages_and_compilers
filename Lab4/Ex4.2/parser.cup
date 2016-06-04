@@ -3,17 +3,34 @@ import java.io.*;
 
 
 parser code {:
-
+    public static int error = 0;
+    
     // Redefinition of error functions
+    @Override
     public void report_error(String message, Object info) {
-        System.err.print("ERROR: Syntax error");
-        if (info instanceof Symbol)
+        System.err.print(Main.file_name+":");
+        if (info instanceof Symbol) {
             if (((Symbol)info).left != -1){
                 int line = (((Symbol)info).left)+1;
                 int column = (((Symbol)info).right)+1;
-                System.err.print(" (linea "+line+", colonna "+column+"): ");
-            } else System.err.print(": ");
-        else System.err.print(": ");
+                System.err.print(line+":"+column+":");
+            }
+        }
+        System.err.print(red("error")+":");
+    }
+    
+    private String red(String str) {
+        return "\u001B[31m" + str + "\u001B[0m";
+    }
+    
+    @Override
+    public void syntax_error(Symbol cur_token){}
+
+    public Symbol getToken() {
+        return ((Symbol)stack.elementAt(tos));
+    }
+    public void report(String message) {
+        report_error(message, getToken());
     }
 :};
 
@@ -56,6 +73,10 @@ cmpt_list   ::= cmpt_list cmpt_item | cmpt_item;
 cmpt_item   ::= function | declaration;
 
 declaration ::= type decl_list_i S;
+/*
+            |   error decl_list_i S
+            |   type error S
+            |   type decl_list_i error;*/
 decl_list_i ::= decl_list_i COMMA item
             |   item;
 
