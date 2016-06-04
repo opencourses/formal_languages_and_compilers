@@ -2,7 +2,6 @@ import java_cup.runtime.*;
 import java.io.*;
 
 
-// TODO: define the error parser code
 parser code {:
 
     // Redefinition of error functions
@@ -26,7 +25,7 @@ terminal INT, DOUBLE, CHAR, FLOAT, STRING;
 terminal INT_TYPE, DOUBLE_TYPE, CHAR_TYPE, FLOAT_TYPE;
 terminal SIGNED, UNSIGNED, REGISTER, LONG, SHORT, EXTERN, STATIC;
 terminal RO, RC, SO, SC, BO, BC, PLUS, MOD, MINUS, STAR, DIV, UMINUS;
-terminal EQ, GT, LT, GE, LE, AND, OR, NOT, S, C, COMMA;
+terminal EQ, GT, LT, GE, LE, AND, OR, NOT, S, C, COMMA, BREAK, CONTINUE;
 terminal WHILE, DO, FOR, IF, ELSE, SWITCH, CASE, DEFAULT, RETURN;
 terminal TOKEN;
 // Non terminal tokens
@@ -37,9 +36,10 @@ non terminal name, id, content;
 non terminal decl_list, stmt_list, stmt_item;
 non terminal assignment, exp, expression;
 non terminal cicle, while, do_while, for;
-non terminal condition, if;
+non terminal condition, if, if_item, switch, case_list, case_item;
 non terminal func_call, exp_list, return;
 // Precedence of operators
+precedence left ELSE;
 precedence left OR;
 precedence left AND;
 precedence left NOT;
@@ -64,7 +64,7 @@ item        ::= id
             |   id EQ value
 			|   id EQ BO string_list BC;
 string_list	::= string_list COMMA STRING | STRING; 
-value       ::= INT| DOUBLE| CHAR| FLOAT | STRING; // Add the value of the string
+value       ::= INT| DOUBLE| CHAR| FLOAT | STRING;
 
 function    ::= type name arguments BO content BC
             |   type name arguments S;
@@ -92,7 +92,7 @@ id          ::= name | name SO INT SC | name SO id SC | name SO SC;
 content     ::= decl_list stmt_list | decl_list | stmt_list;
 decl_list   ::= decl_list declaration | declaration;
 stmt_list   ::= stmt_list stmt_item | stmt_item;
-stmt_item   ::= assignment S | cicle | condition | return S;
+stmt_item   ::= assignment S | cicle | condition | BREAK S | CONTINUE S |return S;
 
 assignment  ::= id EQ expression | expression;
 exp         ::= id | value | func_call;
@@ -109,7 +109,6 @@ expression  ::= exp
             |   exp GE exp
             |   exp LE exp
             /*  Arithmentic expressions */
-			| 	exp PLUS PLUS
             |   exp PLUS exp
             |   exp MINUS exp
             |   exp STAR exp
@@ -122,9 +121,19 @@ while       ::= WHILE RO expression RC BO stmt_list BC;
 do_while    ::= DO BO stmt_list BC WHILE RO expression RC;
 for         ::= FOR RO assignment S expression S assignment RC BO stmt_list BC;
 
-condition   ::= if;    // TODO add switch and if_else
-if          ::= IF RO expression RC BO stmt_list BC;
+condition   ::= if | switch;
+if          ::= IF RO expression RC if_item
+            |   IF RO expression RC if_item ELSE if_item;
+if_item     ::= BO stmt_list BC | stmt_item;
+switch      ::= SWITCH RO id RC BO case_list BC
+            |   SWITCH RO func_call RC BO case_list BC
+            |   SWITCH RO id RC BO case_list DEFAULT C stmt_list BC
+            |   SWITCH RO func_call RC BO case_list DEFAULT C stmt_list BC ;
 
-func_call	::= TOKEN RO exp_list RC;
+case_list   ::= case_list case_item | case_item;
+case_item   ::= CASE value C stmt_list;
+
+func_call	::= TOKEN RO exp_list RC
+            |   TOKEN RO RC;
 exp_list	::= exp_list COMMA expression | expression;
 return		::= RETURN expression;
