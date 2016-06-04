@@ -1,0 +1,98 @@
+import java_cup.runtime.*;
+import java.io.*;
+
+
+parser code {:
+    // Error function
+    public void report_error(String message, Object info) {
+        System.err.print("Error: syntax error");
+        if (info instanceof Symbol) {
+            Symbol i = (Symbol) info;
+            if (i.left != -1){
+                System.err.print("line "+(i.left+1)+" column "+(i.right+1)+": "); 
+            } else {
+                System.err.print(": ");
+            }
+        }
+    }
+
+:};
+
+// Terminal tokens
+terminal RO, RC, BO, BC, SO, SC;
+terminal EQ, PLUS, MINUS, STAR, DIV;
+terminal LT, GT, LE, GE;
+terminal AND, OR, NOT;
+terminal INT_TYPE, DOUBLE_TYPE;
+terminal IF, WHILE, PRINT, ELSE;
+terminal SCOL, CM;
+terminal ID, INT, DOUBLE;
+terminal UMINUS;
+
+// Non terminal tokens
+non terminal prog, decl_list, decl_item, type, var_list, var_item;
+non terminal stmt_list, stmt, if, while, condition, exp, id, assignment, print;
+
+// Precedences and associativities
+precedence left OR;
+precedence left AND;
+precedence left NOT;
+precedence left LT, GT, LE, GE, EQ;
+precedence left PLUS, MINUS;
+precedence left STAR, DIV;
+precedence left UMINUS;
+precedence left IF;
+
+
+// Start with the grammar
+
+start with prog;
+
+prog        ::= decl_list stmt_list {: System.out.println("The program is correct"); :};
+
+// Declarations
+decl_list   ::= decl_list decl_item | decl_item;
+
+decl_item   ::= type var_list SCOL;
+type        ::= INT_TYPE | DOUBLE_TYPE;
+var_list    ::= var_list CM var_item | var_item;
+var_item    ::= ID | ID SO INT SC;
+
+// Instructions
+stmt_list   ::= stmt_list stmt | stmt;
+stmt        ::= if | while | assignment | print | BO stmt_list BC;
+
+if          ::= IF condition stmt ELSE stmt | IF condition stmt;
+while       ::= WHILE condition stmt;
+
+assignment  ::= id EQ exp SCOL | id SCOL;
+
+print       ::= PRINT id SCOL;
+
+condition   ::= RO exp RC;
+
+// Expressions
+exp         ::=
+            /* Logical expressions */
+            exp AND exp 
+            | exp OR exp 
+            | NOT exp
+            /* Comparison expressions */
+            | exp EQ EQ exp 
+            | exp LT exp
+            | exp GT exp
+            | exp GE exp
+            | exp LE exp
+            /* Arithmetic expressions */
+            | exp PLUS exp
+            | exp MINUS exp
+            | exp STAR exp
+            | exp DIV exp
+            | RO exp RC
+            | id
+            | INT
+            | DOUBLE
+            | MINUS INT %prec UMINUS
+            | MINUS DOUBLE %prec UMINUS;
+
+id          ::= ID | ID SO INT SC | ID SO ID SC;
