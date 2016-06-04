@@ -17,14 +17,12 @@ parser code {:
     }
 :};
 
-
-
-
 // Terminal tokens
 terminal INT, DOUBLE, CHAR, FLOAT, STRING;
 terminal INT_TYPE, DOUBLE_TYPE, CHAR_TYPE, FLOAT_TYPE;
 terminal SIGNED, UNSIGNED, REGISTER, LONG, SHORT, EXTERN, STATIC;
 terminal RO, RC, SO, SC, BO, BC, PLUS, MOD, MINUS, STAR, DIV, UMINUS;
+terminal EQPLUS, EQMINUS, PLUSPLUS, MINUSMINUS;
 terminal EQ, GT, LT, GE, LE, AND, OR, NOT, S, C, COMMA, BREAK, CONTINUE;
 terminal WHILE, DO, FOR, IF, ELSE, SWITCH, CASE, DEFAULT, RETURN;
 terminal TOKEN;
@@ -34,7 +32,7 @@ non terminal function, arguments, arg_list, arg_item, string_list;
 non terminal type, type_t, mod_item, mem_mod, sign_mod, len_mod, star_list;
 non terminal name, id, content;
 non terminal decl_list, stmt_list, stmt_item;
-non terminal assignment, exp, expression;
+non terminal assignment, exp;
 non terminal cicle, while, do_while, for;
 non terminal condition, if, if_item, switch, case_list, case_item;
 non terminal func_call, exp_list, return;
@@ -46,6 +44,7 @@ precedence left NOT;
 precedence left LE, LT, GE, GT, EQ;
 precedence left PLUS, MINUS;
 precedence left STAR, DIV;
+precedence left PLUSPLUS, MINUSMINUS;
 precedence left UMINUS;
 
 // Grammar start
@@ -94,11 +93,10 @@ decl_list   ::= decl_list declaration | declaration;
 stmt_list   ::= stmt_list stmt_item | stmt_item;
 stmt_item   ::= assignment S | cicle | condition | BREAK S | CONTINUE S |return S;
 
-assignment  ::= id EQ expression | expression;
-exp         ::= id | value | func_call;
-expression  ::= exp
+assignment  ::= id EQ exp | id EQPLUS exp | id EQMINUS exp | exp;
+exp         ::= 
             /*  Logical expressions */
-            |   exp AND exp
+                exp AND exp
             |   exp OR exp
             |   NOT exp
             /*  Comparison expressions */
@@ -109,21 +107,28 @@ expression  ::= exp
             |   exp GE exp
             |   exp LE exp
             /*  Arithmentic expressions */
+            |   exp PLUSPLUS
+            |   exp MINUSMINUS
+            |   PLUSPLUS exp
+            |   MINUSMINUS exp
             |   exp PLUS exp
             |   exp MINUS exp
             |   exp STAR exp
             |   exp DIV exp
+            |   id
+            |   value
+            |   func_call
             |   RO exp RC
             |   MINUS value %prec UMINUS;
 
 cicle       ::= while | for| do_while S;
-while       ::= WHILE RO expression RC BO stmt_list BC;
-do_while    ::= DO BO stmt_list BC WHILE RO expression RC;
-for         ::= FOR RO assignment S expression S assignment RC BO stmt_list BC;
+while       ::= WHILE RO exp RC BO stmt_list BC;
+do_while    ::= DO BO stmt_list BC WHILE RO exp RC;
+for         ::= FOR RO assignment S exp S assignment RC BO stmt_list BC;
 
 condition   ::= if | switch;
-if          ::= IF RO expression RC if_item
-            |   IF RO expression RC if_item ELSE if_item;
+if          ::= IF RO exp RC if_item
+            |   IF RO exp RC if_item ELSE if_item;
 if_item     ::= BO stmt_list BC | stmt_item;
 switch      ::= SWITCH RO id RC BO case_list BC
             |   SWITCH RO func_call RC BO case_list BC
@@ -135,5 +140,5 @@ case_item   ::= CASE value C stmt_list;
 
 func_call	::= TOKEN RO exp_list RC
             |   TOKEN RO RC;
-exp_list	::= exp_list COMMA expression | expression;
-return		::= RETURN expression;
+exp_list	::= exp_list COMMA exp | exp;
+return		::= RETURN exp;

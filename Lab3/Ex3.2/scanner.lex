@@ -63,6 +63,10 @@ string          = \"[A-Za-z0-9_\-\*\+\.,;:]*\"
 "*"                     {debug("STAR",yytext()); return symbol(sym.STAR);}
 "/"                     {debug("DIV",yytext()); return symbol(sym.DIV);}
 "="                     {debug("EQ",yytext()); return symbol(sym.EQ);}
+"=-"                    {debug("EQMINUS",yytext()); return symbol(sym.EQMINUS);}
+"=+"                    {debug("EQPLUS",yytext()); return symbol(sym.EQPLUS);}
+"++"                    {debug("PLUSPLUS",yytext()); return symbol(sym.PLUSPLUS);}
+"--"                    {debug("MINUSMINUS",yytext()); return symbol(sym.MINUSMINUS);}
 ">"                     {debug("GT",yytext()); return symbol(sym.GT);}
 "<"                     {debug("LT",yytext()); return symbol(sym.LT);}
 ">="                    {debug("GE",yytext()); return symbol(sym.GE);}
