@@ -1,0 +1,88 @@
+import java_cup.runtime.*;
+import java.io.*;
+
+
+parser code {:
+    public static int error = 0;
+
+    // Redefinition of error functions
+    @Override
+    public void report_error(String message, Object info) {
+        error++;
+        System.err.print(Main.file_name+":");
+        if (info instanceof Symbol) {
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(line+":"+column+":");
+            }
+        }
+        System.err.print(red(" error: "));
+        System.err.println(message);
+    }
+
+    private String red(String str) {
+        return "\u001B[31m" + str + "\u001B[0m";
+    }
+
+    @Override
+    public void syntax_error(Symbol cur_token){}
+
+    public Symbol getToken() {
+        return ((Symbol)stack.elementAt(tos));
+    }
+    public void report(String message) {
+        report_error(message, getToken());
+    }
+
+	public void debug(String message) {
+		System.out.println(message);
+	}
+:};
+
+// Terminal symbols
+terminal LOWER, UPPER, REAL;
+terminal SO, SC, RO, RC, S, P, STAR, DIV, DOT, PLUS, MINUS, EQ, COMMA, QMARK;
+terminal UMINUS;
+// Non terminal symbols
+non terminal ok, stmt_list, stmt_item, assignment, expression, exp;
+non terminal variable, real, vector, vector_item;
+// Precedence of the operators
+precedence left MINUS, PLUS;
+precedence left DOT;
+precedence left DIV, STAR;
+precedence left P;
+precedence left UMINUS;
+
+// Start with the grammar
+
+start with ok;
+
+ok			::=	stmt_list QMARK	
+				{: if (parser.error > 0) {
+						System.out.println(parser.error+" errors generated");
+					} 
+				:};
+
+stmt_list	::= stmt_list stmt_item S | stmt_item S;
+stmt_item	::= assignment | expression;
+assignment	::= variable EQ exp
+				{: parser.debug("assignment:"); :};
+variable	::= LOWER | UPPER;
+real		::= REAL;
+vector		::= SO vector_item COMMA vector_item SC;
+vector_item	::= variable | real;
+expression	::= exp 
+				{: parser.debug("scalar expression:"); :};
+				// TODO handle the fact that the expression can be also vectorial
+exp			::= exp PLUS exp
+			|	exp MINUS exp
+			|	exp STAR exp
+			|	exp DIV	exp
+			|	exp P exp
+			|	exp DOT exp
+			|   RO exp RC
+			| 	variable
+			| 	real
+			| 	vector
+			|	MINUS exp %prec UMINUS;

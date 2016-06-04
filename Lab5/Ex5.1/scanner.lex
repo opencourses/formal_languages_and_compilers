@@ -1,21 +1,50 @@
 import java_cup.runtime.*;
-import utils;
 %%
 
-%standalone
+%cup
 %class scanner
 %unicode
 %line
 %column
 
+%{
+    private void debug (String str) {
+        System.out.println(str);
+    }
+    private void debug (String token, String value) {
+        System.out.println(token+": "+value);
+    }
+    private Symbol symbol(int sym){
+        return new Symbol(sym, yyline, yycolumn);
+    }
+%}
 
 nl              = \n|\r|\n\r
+number          = ([0-9])
 lower_letter    = [a-z]
 upper_letter    = [A-Z]
+real            = {integer}(\.{number}+)?{exponent}?
+integer         = ([1-9][0-9]*|0)
+exponent        = (e|E)(((\-|\+)?[1-9])|0)
 
 %%
-
-{nl}            = {;}
-{lower_letter}  = {Utils.debug("LOWER");}
-
-
+{nl}|" "|"\t"       {;}
+{lower_letter}      {debug("LOWER"); return symbol(sym.LOWER); }
+{upper_letter}      {debug("UPPER"); return symbol(sym.UPPER); }
+{real}              {debug("REAL"); return symbol(sym.REAL); }
+"["                 {debug("SO"); return symbol(sym.SO); }
+"]"                 {debug("SC"); return symbol(sym.SC); }
+"("                 {debug("RO"); return symbol(sym.RO); }
+")"                 {debug("RC"); return symbol(sym.RC); }
+";"                 {debug("S"); return symbol(sym.S); }
+"^"                 {debug("P"); return symbol(sym.P); }
+"*"                 {debug("STAR"); return symbol(sym.STAR); }
+"/"                 {debug("DIV"); return symbol(sym.DIV); }
+"."                 {debug("DOT"); return symbol(sym.DOT); }
+"+"                 {debug("PLUS"); return symbol(sym.PLUS); }
+"-"                 {debug("MINUS"); return symbol(sym.MINUS); }
+"="                 {debug("EQ"); return symbol(sym.EQ); }
+","                 {debug("COMMA"); return symbol(sym.COMMA); }
+"?"                 {debug("QMARK"); return symbol(sym.QMARK); }
+.                   {debug("Symbol not recognized",yytext()); 
+                     return symbol(sym.error); }
