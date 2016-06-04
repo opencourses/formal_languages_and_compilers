@@ -20,6 +20,9 @@ import java_cup.runtime.*;
     private Symbol symbol(int sym){
         return new Symbol(sym, yyline, yycolumn);
     }
+    private Symbol symbol(int sym, Object obj){
+        return new Symbol(sym, yyline, yycolumn, obj);
+    }
 %}
 
 nl              = \n|\r|\n\r
@@ -32,9 +35,12 @@ exponent        = (e|E)(((\-|\+)?[1-9])|0)
 
 %%
 {nl}|" "|"\t"       {;}
-{lower_letter}      {debug("VARIABLE"); return symbol(sym.VARIABLE); }
-{upper_letter}      {debug("VECTOR"); return symbol(sym.VECTOR); }
-{real}              {debug("REAL"); return symbol(sym.REAL); }
+{lower_letter}      {debug("VARIABLE"); 
+                     return symbol(sym.VARIABLE, yytext()); }
+{upper_letter}      {debug("VECTOR"); 
+                     return symbol(sym.VECTOR, yytext()); }
+{real}              {debug("REAL"); 
+                     return symbol(sym.REAL, Double.parseDouble(yytext())); }
 "["                 {debug("SO"); return symbol(sym.SO); }
 "]"                 {debug("SC"); return symbol(sym.SC); }
 "("                 {debug("RO"); return symbol(sym.RO); }

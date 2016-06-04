@@ -5,7 +5,7 @@ import java.util.HashMap;
 parser code {:
     public static int error = 0;
     public HashMap symbolTable;
-
+    private static final boolean DEBUG = false;
     // Redefinition of error functions
     @Override
     public void report_error(String message, Object info) {
@@ -37,8 +37,12 @@ parser code {:
     }
 
 	public void debug(String message) {
-		System.out.println(message);
+        if (this.DEBUG)
+            System.out.println(red("DEBUG:")+message);
 	}
+    public void output(String message){
+        System.out.println(message);
+    }
 :};
 
 init with {:
@@ -46,18 +50,21 @@ init with {:
 :}
 
 // Terminal symbols
-terminal VARIABLE, VECTOR, REAL;
+terminal String VARIABLE, VECTOR;
+terminal Double REAL;
 terminal SO, SC, RO, RC, S, P, STAR, DIV, DOT, PLUS, MINUS, EQ, COMMA, QMARK;
 terminal UMINUS;
 // Non terminal symbols
 non terminal ok, stmt_list, stmt_item, assignment;
-non terminal variable_id, vector_id, scalar, vector, vector_item;
-non terminal expression, sc_exp, vec_exp;
+non terminal String variable_id, vector_id;
+non terminal Double scalar, sc_exp;
+non terminal Double[] vector, vec_exp;
+non terminal expression;
 // Precedence of the operators
 precedence left MINUS, PLUS;
-precedence left DOT;
 precedence left DIV, STAR;
 precedence left P;
+precedence left DOT;
 precedence left UMINUS;
 
 // Start with the grammar
@@ -65,7 +72,8 @@ precedence left UMINUS;
 start with ok;
 
 ok			::=	stmt_list QMARK	
-				{: if (parser.error > 0) {
+				{:  parser.debug("program completed");
+                    if (parser.error > 0) {
 						System.out.println(parser.error+" errors generated");
 					} 
 				:};
@@ -73,36 +81,78 @@ ok			::=	stmt_list QMARK
 stmt_list	::= stmt_list stmt_item S | stmt_item S;
 stmt_item	::= assignment | expression;
 
-assignment	::= variable_id EQ sc_exp
-            |   vector_id EQ vec_exp;
+assignment	::= variable_id:x EQ sc_exp:y
+                {:  parser.debug("creating variable in symbolTable"); 
+                    parser.output("assignment: "+y);
+                    parser.symbolTable.put(x, y);
+                :}
+            |   vector_id:x EQ vec_exp:y
+                {:  parser.debug("creating vector in symbolTable"); 
+                    parser.output("assignment: ["+y[0]+","+y[1]+"]");
+                    parser.symbolTable.put(x, y);
+                :};
 
-variable_id ::= VARIABLE;
-vector_id   ::= VECTOR;
+variable_id ::= VARIABLE:x
+                {:  parser.debug("variable_id "+x); RESULT=x; :};
+vector_id   ::= VECTOR:x
+                {:  parser.debug("vector_id "+x); RESULT=x; :};
 
-scalar		::= REAL
-            |   variable_id;
+scalar		::= REAL:x
+                {:  RESULT=x; :}
+            |   variable_id:x
+                {:  parser.debug("retrieve scalar "+x+" from symbol table");
+                    RESULT=(Double)parser.symbolTable.get(x); 
+                :};
 
-vector      ::= SO scalar COMMA scalar SC
-            |   vector_id;
+vector      ::= SO scalar:x COMMA scalar:y SC
+                {:  RESULT= new Double[2];
+                    RESULT[0]=x;
+                    RESULT[1]=y;
+                :}
+            |   vector_id:x
+                {:  parser.debug("retrieve vector "+x+" from symbol table");
+                    RESULT=(Double[])parser.symbolTable.get(x); 
+                :};
 
-expression  ::= sc_exp | vec_exp;
+expression  ::= sc_exp:x
+                {:  parser.output("scalar expression: " +x);:}
+            |   vec_exp:x
+                {:  parser.output("vector expression: ["+x[0]+","+x[1]+"]"); :};
 
-sc_exp		::= sc_exp PLUS sc_exp
-			|	sc_exp MINUS sc_exp
-			|	sc_exp STAR sc_exp
-			|	sc_exp DIV	sc_exp
-			|	sc_exp P sc_exp
-			|   RO sc_exp RC
-            |   vec_exp DOT vec_exp
-			|	MINUS sc_exp %prec UMINUS
-            |   scalar;
+sc_exp		::= sc_exp:x PLUS sc_exp:y
+                {: RESULT=x+y; :}
+			|	sc_exp:x MINUS sc_exp:y
+                {: RESULT=x-y; :}
+			|	sc_exp:x STAR sc_exp:y
+                {: RESULT=x*y; :}
+			|	sc_exp:x DIV sc_exp:y
+                {: RESULT=x/y; :}
+			|	sc_exp:x P sc_exp:y
+                {: RESULT=Math.pow(x,y); :}
+			|   RO sc_exp:x RC
+                {: RESULT=x; :}
+            |   vec_exp:x DOT vec_exp:y
+                {: RESULT=(x[0]*y[0])+(x[1]*y[1]);:}
+			|   MINUS sc_exp:x
+                {: RESULT=-x; :} %prec UMINUS
+            |   scalar:x
+                {: RESULT=x; :};
 
-vec_exp     ::= vec_exp PLUS vec_exp
-			|	vec_exp MINUS vec_exp
-			|   RO vec_exp RC
-            |   sc_exp STAR vec_exp
-            |   vec_exp STAR sc_exp
-            |   sc_exp DIV vec_exp
-            |   vec_exp DIV sc_exp
-			|	MINUS vec_exp %prec UMINUS
-            |   vector;
+vec_exp     ::= vec_exp:x PLUS vec_exp:y
+                {: RESULT=new Double[2]; RESULT[0]=x[0]+y[0]; RESULT[1]=x[1]+y[1]; :}
+			|	vec_exp:x MINUS vec_exp:y
+                {: RESULT=new Double[2]; RESULT[0]=x[0]-y[0]; RESULT[1]=x[1]-y[1]; :}
+			|   RO vec_exp:x RC
+                {: RESULT=new Double[2]; RESULT=x; :}
+            |   sc_exp:x STAR vec_exp:y  
+                {: RESULT=new Double[2]; RESULT[0]=x*y[0]; RESULT[1]=x*y[1]; :}
+            |   vec_exp:y STAR sc_exp:x
+                {: RESULT=new Double[2]; RESULT[0]=x*y[0]; RESULT[1]=x*y[1]; :}
+            |   sc_exp:x DIV vec_exp:y
+                {: RESULT=new Double[2]; RESULT[0]=x/y[0]; RESULT[1]=x/y[1]; :}
+            |   vec_exp:x DIV sc_exp:y
+                {: RESULT=new Double[2]; RESULT[0]=x[0]/y; RESULT[1]=x[1]/y; :}
+			|	MINUS vec_exp:x
+                {: RESULT=new Double[2]; RESULT[0]=-x[0]; RESULT[1]=-x[1]; :}
+            |   vector:x
+                {: RESULT=new Double[2]; RESULT=x; :};
