@@ -1,9 +1,10 @@
 import java_cup.runtime.*;
 import java.io.*;
-
+import java.util.HashMap;
 
 parser code {:
     public static int error = 0;
+    public HashMap symbolTable;
 
     // Redefinition of error functions
     @Override
@@ -40,13 +41,18 @@ parser code {:
 	}
 :};
 
+init with {:
+    symbolTable = new HashMap();
+:}
+
 // Terminal symbols
-terminal LOWER, UPPER, REAL;
+terminal VARIABLE, VECTOR, REAL;
 terminal SO, SC, RO, RC, S, P, STAR, DIV, DOT, PLUS, MINUS, EQ, COMMA, QMARK;
 terminal UMINUS;
 // Non terminal symbols
-non terminal ok, stmt_list, stmt_item, assignment, expression, exp;
-non terminal variable, real, vector, vector_item;
+non terminal ok, stmt_list, stmt_item, assignment;
+non terminal variable_id, vector_id, scalar, vector, vector_item;
+non terminal expression, sc_exp, vec_exp;
 // Precedence of the operators
 precedence left MINUS, PLUS;
 precedence left DOT;
@@ -66,23 +72,37 @@ ok			::=	stmt_list QMARK
 
 stmt_list	::= stmt_list stmt_item S | stmt_item S;
 stmt_item	::= assignment | expression;
-assignment	::= variable EQ exp
-				{: parser.debug("assignment:"); :};
-variable	::= LOWER | UPPER;
-real		::= REAL;
-vector		::= SO vector_item COMMA vector_item SC;
-vector_item	::= variable | real;
-expression	::= exp 
-				{: parser.debug("scalar expression:"); :};
-				// TODO handle the fact that the expression can be also vectorial
-exp			::= exp PLUS exp
-			|	exp MINUS exp
-			|	exp STAR exp
-			|	exp DIV	exp
-			|	exp P exp
-			|	exp DOT exp
-			|   RO exp RC
-			| 	variable
-			| 	real
-			| 	vector
-			|	MINUS exp %prec UMINUS;
+
+assignment	::= variable_id EQ sc_exp
+            |   vector_id EQ vec_exp;
+
+variable_id ::= VARIABLE;
+vector_id   ::= VECTOR;
+
+scalar		::= REAL
+            |   variable_id;
+
+vector      ::= SO scalar COMMA scalar SC
+            |   vector_id;
+
+expression  ::= sc_exp | vec_exp;
+
+sc_exp		::= sc_exp PLUS sc_exp
+			|	sc_exp MINUS sc_exp
+			|	sc_exp STAR sc_exp
+			|	sc_exp DIV	sc_exp
+			|	sc_exp P sc_exp
+			|   RO sc_exp RC
+            |   vec_exp DOT vec_exp
+			|	MINUS sc_exp %prec UMINUS
+            |   scalar;
+
+vec_exp     ::= vec_exp PLUS vec_exp
+			|	vec_exp MINUS vec_exp
+			|   RO vec_exp RC
+            |   sc_exp STAR vec_exp
+            |   vec_exp STAR sc_exp
+            |   sc_exp DIV vec_exp
+            |   vec_exp DIV sc_exp
+			|	MINUS vec_exp %prec UMINUS
+            |   vector;

@@ -8,11 +8,14 @@ import java_cup.runtime.*;
 %column
 
 %{
+    private static final boolean DEBUG = false;
     private void debug (String str) {
-        System.out.println(str);
+        if (DEBUG)
+            System.out.println(str);
     }
     private void debug (String token, String value) {
-        System.out.println(token+": "+value);
+        if (DEBUG)
+            System.out.println(token+": "+value);
     }
     private Symbol symbol(int sym){
         return new Symbol(sym, yyline, yycolumn);
@@ -29,8 +32,8 @@ exponent        = (e|E)(((\-|\+)?[1-9])|0)
 
 %%
 {nl}|" "|"\t"       {;}
-{lower_letter}      {debug("LOWER"); return symbol(sym.LOWER); }
-{upper_letter}      {debug("UPPER"); return symbol(sym.UPPER); }
+{lower_letter}      {debug("VARIABLE"); return symbol(sym.VARIABLE); }
+{upper_letter}      {debug("VECTOR"); return symbol(sym.VECTOR); }
 {real}              {debug("REAL"); return symbol(sym.REAL); }
 "["                 {debug("SO"); return symbol(sym.SO); }
 "]"                 {debug("SC"); return symbol(sym.SC); }
