@@ -3,19 +3,58 @@ import java.io.*;
 
 
 parser code {:
-    // Error function
+	private static final boolean DEBUG = true;
+    public static int error = 0;
+    public static FileWriter fileout;
+
+	@Override
     public void report_error(String message, Object info) {
-        System.err.print("Error: syntax error");
+        error++;
+        System.err.print(Main.file_name+":");
         if (info instanceof Symbol) {
-            Symbol i = (Symbol) info;
-            if (i.left != -1){
-                System.err.print("line "+(i.left+1)+" column "+(i.right+1)+": "); 
-            } else {
-                System.err.print(": ");
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(line+":"+column+":");
             }
         }
+        System.err.print(red(" error: "));
+        System.err.println(message);
     }
 
+    private String red(String str) {
+        return "\u001B[31m" + str + "\u001B[0m";
+    }
+
+    @Override
+    public void syntax_error(Symbol cur_token){}
+
+    public Symbol getToken() {
+        return ((Symbol)stack.elementAt(tos));
+    }
+    public void report(String message) {
+        report_error(message, getToken());
+    }
+	public void debug(String message) {
+        if (DEBUG)
+            System.out.println(red("DEBUG: ")+message);
+    }
+    public void output(String message){
+		try {
+        	fileout.write(message);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(message);
+    }
+:};
+
+init with {:
+	try{
+        fileout = new FileWriter(new File("output.pasm"));
+    } catch(IOException e){
+        System.err.println(e);
+    }
 :};
 
 // Terminal tokens
@@ -48,7 +87,8 @@ precedence left IF;
 
 start with prog;
 
-prog        ::= decl_list stmt_list {: System.out.println("The program is correct"); :};
+prog        ::= decl_list stmt_list 
+                {: parser.fileout.close(); parser.debug("The program is correct"); :};
 
 // Declarations
 decl_list   ::= decl_list decl_item | decl_item;
