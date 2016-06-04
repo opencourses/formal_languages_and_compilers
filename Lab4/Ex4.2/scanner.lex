@@ -91,6 +91,8 @@ string          = \"[A-Za-z0-9_\-\*\+\.,;:]*\"
 "default"               {debug("DEFAULT",yytext()); return symbol(sym.DEFAULT);}
 "return"                {debug("RETURN",yytext()); return symbol(sym.RETURN);}
 
+"print"                 {debug("PRINT",yytext()); return symbol(sym.PRINT);}
+
 {token}                 {debug("TOKEN",yytext()); return symbol(sym.TOKEN);}
 {int_value}             {debug("INT",yytext()); return symbol(sym.INT);}
 {double_value}          {debug("DOUBLE",yytext()); return symbol(sym.DOUBLE);}

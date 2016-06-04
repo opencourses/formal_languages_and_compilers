@@ -8,6 +8,7 @@ parser code {:
     // Redefinition of error functions
     @Override
     public void report_error(String message, Object info) {
+        error++;
         System.err.print(Main.file_name+":");
         if (info instanceof Symbol) {
             if (((Symbol)info).left != -1){
@@ -16,7 +17,8 @@ parser code {:
                 System.err.print(line+":"+column+":");
             }
         }
-        System.err.print(red("error")+":");
+        System.err.print(red(" error: "));
+        System.err.println(message);
     }
     
     private String red(String str) {
@@ -42,7 +44,7 @@ terminal RO, RC, SO, SC, BO, BC, PLUS, MOD, MINUS, STAR, DIV, UMINUS;
 terminal EQPLUS, EQMINUS, PLUSPLUS, MINUSMINUS;
 terminal EQ, GT, LT, GE, LE, AND, OR, NOT, S, C, COMMA, BREAK, CONTINUE;
 terminal WHILE, DO, FOR, IF, ELSE, SWITCH, CASE, DEFAULT, RETURN;
-terminal TOKEN;
+terminal TOKEN, PRINT;
 // Non terminal tokens
 non terminal prog, cmpt_list, cmpt_item, declaration, decl_list_i, item, value;
 non terminal function, arguments, arg_list, arg_item, string_list;
@@ -68,22 +70,32 @@ precedence left UMINUS;
 
 start with prog;
 
-prog        ::= cmpt_list {: System.out.println("The program is correct"); :}; 
+prog        ::= cmpt_list   {: 
+                                if (parser.error > 0) {
+                                    System.out.println(parser.error+" errors generated");
+                                    return null;
+                                }
+                                System.out.println("The program is correct"); 
+                            :}; 
 cmpt_list   ::= cmpt_list cmpt_item | cmpt_item;
 cmpt_item   ::= function | declaration;
 
-declaration ::= type decl_list_i S;
-/*
+declaration ::= type decl_list_i S
             |   error decl_list_i S
-            |   type error S
-            |   type decl_list_i error;*/
+                {:parser.report("the declaration type is not correct"); :};
 decl_list_i ::= decl_list_i COMMA item
-            |   item;
+            |   item
+            |   decl_list_i error item
+                {:parser.report("expected \",\" first declaration"); :}
+            |   error
+                {:parser.report("expected \";\" after declaration"); :};
 
 item        ::= id
             |   id EQ value
-			|   id EQ BO string_list BC;
-string_list	::= string_list COMMA STRING | STRING; 
+			|   id EQ BO string_list BC
+            |   id EQ error
+                {:parser.report("error in the vector bracket"); :};
+string_list	::= string_list COMMA STRING | STRING;
 value       ::= INT| DOUBLE| CHAR| FLOAT | STRING;
 
 function    ::= type name arguments BO content BC
@@ -96,7 +108,9 @@ arg_item    ::= type id;
 type        ::= mod_item type_t star_list
             |   mod_item type_t
             |   type_t star_list
-            |   type_t;
+            |   type_t
+            |   error type_t star_list
+                {:parser.report("error in the type modificator"); :};
 type_t      ::= INT_TYPE| DOUBLE_TYPE| CHAR_TYPE| FLOAT_TYPE;
 mod_item    ::= mem_mod sign_mod len_mod
             |   mem_mod sign_mod | mem_mod len_mod
@@ -108,13 +122,33 @@ len_mod     ::= LONG LONG | SHORT SHORT | LONG | SHORT;
 star_list   ::= star_list STAR | STAR;
 
 name        ::= TOKEN;
-id          ::= name | name SO INT SC | name SO id SC | name SO SC;
+id          ::= name 
+            |   name SO INT SC 
+            |   name SO id SC 
+            |   name SO SC;
 content     ::= decl_list stmt_list | decl_list | stmt_list;
+
 decl_list   ::= decl_list declaration | declaration;
 stmt_list   ::= stmt_list stmt_item | stmt_item;
-stmt_item   ::= assignment S | cicle | condition | BREAK S | CONTINUE S |return S;
+stmt_item   ::= assignment S 
+            |   cicle 
+            |   condition 
+            |   BREAK S
+            |   CONTINUE S
+            |   return S
+            |   assignment error 
+                {:parser.report("missing \";\" after the assignment"); :}
+            |   BREAK error
+                {:parser.report("missing \";\" after break"); :}
+            |   CONTINUE error
+                {:parser.report("missing \";\" after the continue"); :};
 
-assignment  ::= id EQ exp | id EQPLUS exp | id EQMINUS exp | exp;
+
+assignment  ::= id EQ exp | id EQPLUS exp | id EQMINUS exp | exp
+            |   id EQ error
+                {:parser.report("error between the expressions"); :}
+            |   error EQ exp
+                {:parser.report("error between the expressions"); :};
 exp         ::= 
             /*  Logical expressions */
                 exp AND exp
@@ -143,13 +177,26 @@ exp         ::=
             |   MINUS value %prec UMINUS;
 
 cicle       ::= while | for| do_while S;
-while       ::= WHILE RO exp RC BO stmt_list BC;
+while       ::= WHILE RO exp RC BO stmt_list BC
+            |   WHILE RO error RC stmt_list BC
+                {: parser.report("error in the while condition"); :}
+            |   WHILE error exp RC stmt_list BC
+                {: parser.report("missing \"(\" before the while condition"); :}
+            |   WHILE RO exp error stmt_list BC
+                {: parser.report("missing \")\" after the while condition"); :};
 do_while    ::= DO BO stmt_list BC WHILE RO exp RC;
 for         ::= FOR RO assignment S exp S assignment RC BO stmt_list BC;
 
 condition   ::= if | switch;
 if          ::= IF RO exp RC if_item
-            |   IF RO exp RC if_item ELSE if_item;
+            |   IF RO exp RC if_item ELSE if_item
+            |   IF RO error RC if_item ELSE if_item
+                {: parser.report("error in the if condition"); :}
+            |   IF error exp RC if_item ELSE if_item
+                {: parser.report("missing \"(\" before the if condition"); :}
+            |   IF RO exp error if_item ELSE if_item
+                {: parser.report("missing \")\" after the if condition"); :};
+
 if_item     ::= BO stmt_list BC | stmt_item;
 switch      ::= SWITCH RO id RC BO case_list BC
             |   SWITCH RO func_call RC BO case_list BC
@@ -159,7 +206,11 @@ switch      ::= SWITCH RO id RC BO case_list BC
 case_list   ::= case_list case_item | case_item;
 case_item   ::= CASE value C stmt_list;
 
-func_call	::= TOKEN RO exp_list RC
-            |   TOKEN RO RC;
+func_call	::= name RO exp_list RC
+            |   name RO RC
+            |   PRINT RO exp_list RC
+            |   PRINT RO error RC
+                {: parser.report("error in the print function"); :};
+
 exp_list	::= exp_list COMMA exp | exp;
 return		::= RETURN exp;

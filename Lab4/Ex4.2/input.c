@@ -1,8 +1,16 @@
 extern int *fn1(int a, int b, char *c[]);
-register int ff;
+// missing ; after the declaration
+register int ff
+// invalid type
+register antani ff;
+antani ff;
+// invalid declaration
+register int ; ff;
+
+
 
 int fn2() {
-  	static unsigned long intiadf k = 1, i;
+  	static unsigned long int a = 1, i;
   	for(i = 0; i < 10; i++) {
 		k-1;
 	}
