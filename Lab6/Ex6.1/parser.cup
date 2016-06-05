@@ -70,7 +70,7 @@ terminal UMINUS;
 
 // Non terminal tokens
 non terminal prog, decl_list, decl_item, type, var_list, var_item;
-non terminal stmt_list, stmt, if, while, condition, exp, id, assignment, print;
+non terminal stmt_list, stmt, if, while, condition, exp, id, assignment, print, ok;
 
 // Precedences and associativities
 precedence left OR;
@@ -85,27 +85,66 @@ precedence left IF;
 
 // Start with the grammar
 
-start with prog;
+start with ok;
+
+ok          ::= prog
+                {:  parser.fileout.close();
+                    if (parser.error > 0) {
+                        System.out.println(parser.error+" errors generated");
+                    } else {
+                        parser.debug("The program is correct"); 
+                    }
+                :};
 
 prog        ::= decl_list stmt_list 
-                {: parser.fileout.close(); parser.debug("The program is correct"); :};
+            |   decl_list
+            |   stmt_list;
 
 // Declarations
 decl_list   ::= decl_list decl_item | decl_item;
 
-decl_item   ::= type var_list SCOL;
+decl_item   ::= type var_list SCOL
+            |   error var_list SCOL
+                {:  parser.report("invalid type in declaration"); :}
+            |   type var_list error
+                {:  parser.report("missing \";\" after the declaration"); :};
 type        ::= INT_TYPE | DOUBLE_TYPE;
 var_list    ::= var_list CM var_item | var_item;
 var_item    ::= ID | ID SO INT SC;
 
 // Instructions
 stmt_list   ::= stmt_list stmt | stmt;
-stmt        ::= if | while | assignment | print | BO stmt_list BC;
+stmt        ::= if | while | assignment | print 
+            |   BO stmt_list BC
+            |   BO stmt_list error 
+                {:  parser.report("missing the close bracket"); :}
+            |   BO error BC
+                {:  parser.report("error in the statement"); :};
 
-if          ::= IF condition stmt ELSE stmt | IF condition stmt;
-while       ::= WHILE condition stmt;
 
-assignment  ::= id EQ exp SCOL | id SCOL;
+if          ::= IF condition condition stmt
+            |   IF error stmt
+                {:  parser.report("error in the if condition"); :}
+            |   IF condition error
+                {:  parser.report("error in the if statement"); :}
+            |   IF condition stmt ELSE error
+                {:  parser.report("error in the else statement"); :};
+                
+
+while       ::= WHILE condition stmt
+            |   WHILE error stmt
+                {:  parser.report("error in the while condition"); :}
+            |   WHILE condition error
+                {:  parser.report("error in the while statement"); :};
+
+assignment  ::= id EQ exp SCOL 
+            |   id SCOL
+            |   error EQ exp SCOL
+                {:  parser.report("error in the assignemnt left value"); :}
+            |   id EQ error SCOL
+                {:  parser.report("error in the assignemnt expression"); :}
+            |   id EQ exp error
+                {:  parser.report("missing \";\" after the assignment"); :};
 
 print       ::= PRINT id SCOL;
 

@@ -68,4 +68,4 @@ else        {debug("ELSE"); return symbol(sym.ELSE);}
 "/*" ~ "*/" {;}
 {ws}|{nl}   {;}
 
-.           {System.out.println("Scanner error: "+yytext());}
+.           {debug("error"); return new Symbol(sym.error);}
