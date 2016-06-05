@@ -15,15 +15,15 @@ EVAL 2.5
 ASS x[4]
 EVAL 5
 ASS pos
-L1: EVAL pos 0 >  /* while (line 18) */
+L1: EVAL pos 0 >
 GOTOF L2
 EVAL 0
 ASS i
-L3:EVAL i pos 1 - < /*while(line20)*/
+L3:EVAL i pos 1 - <
 GOTOF L4
 EVAL i 1 +
 ASS j
-EVAL x[i] x[j] > /* if (line 22) */
+EVAL x[i] x[j] >
 GOTOF L5
 EVAL x[j]
 ASS swap
@@ -39,7 +39,7 @@ ASS pos
 GOTO L1
 L2: EVAL 0
 ASS i
-L6: EVAL i 5 < /* while (line 35) */ 
+L6: EVAL i 5 <
 GOTOF L7
 PRINT x[i]
 EVAL i 1 +
