@@ -51,8 +51,10 @@ double      = (([0-9]+\.[0-9]*) | ([0-9]*\.[0-9]+)) (e|E('+'|'-')?[0-9]+)?
 "|"         {debug("OR"); return symbol(sym.OR);}
 "!"         {debug("NOT"); return symbol(sym.NOT);}
 
-"int"       {debug("INT_TYPE"); return symbol(sym.INT_TYPE);}
-"double"    {debug("DOUBLE_TYPE"); return symbol(sym.DOUBLE_TYPE);}
+"int"       {debug("INT_TYPE");
+             return symbol(sym.INT_TYPE, new String(yytext()));}
+"double"    {debug("DOUBLE_TYPE"); 
+             return symbol(sym.DOUBLE_TYPE, new String(yytext()));}
 
 print       {debug("PRINT"); return symbol(sym.PRINT);}
 if          {debug("IF"); return symbol(sym.IF);}

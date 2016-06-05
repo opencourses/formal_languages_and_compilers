@@ -6,6 +6,7 @@ parser code {:
 	private static final boolean DEBUG = true;
     public static int error = 0;
     public static FileWriter fileout;
+	public static int label = 0;
 
 	@Override
     public void report_error(String message, Object info) {
@@ -26,12 +27,20 @@ parser code {:
         return "\u001B[31m" + str + "\u001B[0m";
     }
 
+	public String genLabel() {
+		return "L"+label++;
+	}
+
     @Override
     public void syntax_error(Symbol cur_token){}
 
     public Symbol getToken() {
         return ((Symbol)stack.elementAt(tos));
     }
+	public Object getToken(int position) {
+        return (((Symbol)stack.elementAt(tos+position)).value);
+    }
+
     public void report(String message) {
         report_error(message, getToken());
     }
@@ -45,7 +54,7 @@ parser code {:
         } catch(IOException e) {
             e.printStackTrace();
         }
-        System.out.println(message);
+        System.out.print(message);
     }
 :};
 
@@ -65,12 +74,18 @@ terminal AND, OR, NOT;
 terminal INT_TYPE, DOUBLE_TYPE;
 terminal IF, WHILE, PRINT, ELSE;
 terminal SCOL, CM;
-terminal ID, INT, DOUBLE;
+terminal Integer INT;
+terminal Double DOUBLE;
 terminal UMINUS;
+terminal String ID;
 
 // Non terminal tokens
-non terminal prog, decl_list, decl_item, type, var_list, var_item;
-non terminal stmt_list, stmt, if, while, condition, exp, id, assignment, print, ok;
+non terminal prog;
+non terminal stmt_list, stmt, if, while, condition;
+non terminal String[] while_id, if_id;
+non terminal print, ok;
+non terminal String assignment, exp, id;
+non terminal String type, var_item, var_list, decl_item, decl_list;
 
 // Precedences and associativities
 precedence left OR;
@@ -88,12 +103,13 @@ precedence left IF;
 start with ok;
 
 ok          ::= prog
-                {:  parser.fileout.close();
-                    if (parser.error > 0) {
+                {:  if (parser.error > 0) {
                         System.out.println(parser.error+" errors generated");
                     } else {
+						parser.output("END\n");
                         parser.debug("The program is correct"); 
                     }
+					parser.fileout.close();
                 :};
 
 prog        ::= decl_list stmt_list 
@@ -108,70 +124,119 @@ decl_item   ::= type var_list SCOL
                 {:  parser.report("invalid type in declaration"); :}
             |   type var_list error
                 {:  parser.report("missing \";\" after the declaration"); :};
-type        ::= INT_TYPE | DOUBLE_TYPE;
-var_list    ::= var_list CM var_item | var_item;
-var_item    ::= ID | ID SO INT SC;
+type        ::= INT_TYPE 
+                {: 	RESULT="INT"; :}
+            |   DOUBLE_TYPE
+                {: 	RESULT="DOUBLE"; :};
+var_list    ::= var_list:y CM var_item:x
+				{:	parser.output(y+" "+x+"\n"); :}
+            |   var_item:x
+				{:	parser.output(parser.getToken(-1)+" "+x+"\n");
+					RESULT=(String)parser.getToken(-1);
+				:};
+var_item    ::= ID:x
+                {: 	RESULT=x; :}
+            |   ID:x SO INT:y SC
+                {: 	RESULT=x+"["+y+"]"; :};
 
 // Instructions
 stmt_list   ::= stmt_list stmt | stmt;
 stmt        ::= if | while | assignment | print 
             |   BO stmt_list BC
-            |   BO stmt_list error 
-                {:  parser.report("missing the close bracket"); :}
             |   BO error BC
                 {:  parser.report("error in the statement"); :};
 
 
-if          ::= IF condition condition stmt
+if          ::= if_id:x
+				condition 
+				{: 	parser.output("GOTOF "+x[1]+"\n"); :}
+				stmt
+				{:	parser.output(x[1]+": "); :}
             |   IF error stmt
                 {:  parser.report("error in the if condition"); :}
             |   IF condition error
                 {:  parser.report("error in the if statement"); :}
             |   IF condition stmt ELSE error
                 {:  parser.report("error in the else statement"); :};
-                
+if_id		::=	IF
+				{:	RESULT=new String[2];
+					RESULT[0]=parser.genLabel(); /* else */
+					RESULT[1]=parser.genLabel(); /* finish */ :};
 
-while       ::= WHILE condition stmt
-            |   WHILE error stmt
-                {:  parser.report("error in the while condition"); :}
-            |   WHILE condition error
-                {:  parser.report("error in the while statement"); :};
+while       ::= while_id:x 
+				condition
+				{:	parser.output("GOTOF "+x[1]+"\n"); :}
+				stmt
+				{:	parser.output("GOTO "+x[0]+"\n"+x[1]+": "); :}
+            |   while_id error stmt
+                {:  parser.report("error in the while condition"); :};
 
-assignment  ::= id EQ exp SCOL 
+while_id	::= WHILE
+				{:	RESULT=new String[3];
+					RESULT[0]=parser.genLabel();
+					RESULT[1]=parser.genLabel();
+					parser.output(RESULT[0]+": "); :};
+
+assignment  ::= id:x EQ exp:y SCOL
+				{:	parser.output("EVAL "+y+"\nASS "+x+"\n"); :}
             |   id SCOL
+				{: 	parser.debug("statement with no effect"); :}
             |   error EQ exp SCOL
                 {:  parser.report("error in the assignemnt left value"); :}
-            |   id EQ error SCOL
-                {:  parser.report("error in the assignemnt expression"); :}
             |   id EQ exp error
                 {:  parser.report("missing \";\" after the assignment"); :};
 
-print       ::= PRINT id SCOL;
+print       ::= PRINT exp:x SCOL
+				{:	parser.output("PRINT "+x); :}; 
 
-condition   ::= RO exp RC;
+condition   ::= RO exp:x RC
+				{:	parser.output("EVAL "+x+"\n"); :};
 
 // Expressions
 exp         ::=
-            /* Logical expressions */
-            exp AND exp 
-            | exp OR exp 
-            | NOT exp
-            /* Comparison expressions */
-            | exp EQ EQ exp 
-            | exp LT exp
-            | exp GT exp
-            | exp GE exp
-            | exp LE exp
-            /* Arithmetic expressions */
-            | exp PLUS exp
-            | exp MINUS exp
-            | exp STAR exp
-            | exp DIV exp
-            | RO exp RC
-            | id
-            | INT
-            | DOUBLE
-            | MINUS INT %prec UMINUS
-            | MINUS DOUBLE %prec UMINUS;
+            /***Logical expressions*****/
+            	exp:x AND exp:y 
+				{: 	RESULT=(x+y+"& "); :}
+            | 	exp:x OR exp:y 
+				{: 	RESULT=(x+y+"| "); :}
+            | 	NOT exp:x
+				{: 	RESULT=(x+"! "); :}
+            /***Comparison expressions**/
+            | 	exp:x EQ EQ exp:y 
+				{: 	RESULT=(x+y+"== "); :}
+            | 	exp:x LT exp:y
+				{: 	RESULT=(x+y+"< "); :}
+            | 	exp:x GT exp:y
+				{: 	RESULT=(x+y+"> "); :}
+            | 	exp:x GE exp:y
+				{: 	RESULT=(x+y+"=> "); :}
+            | 	exp:x LE exp:y
+				{: 	RESULT=(x+y+"<= "); :}
+            /***Arithmetic expressions**/
+            | 	exp:x PLUS exp:y
+				{: 	RESULT=(x+y+"+ "); :}
+            | 	exp:x MINUS exp:y
+				{: 	RESULT=(x+y+"- "); :}
+            | 	exp:x STAR exp:y
+				{: 	RESULT=(x+y+"* "); :}
+            | 	exp:x DIV exp:y
+				{: 	RESULT=(x+y+"/ "); :}
+            | 	RO exp:x RC
+				{: 	RESULT=x; :}
+            | 	id:x
+				{: 	RESULT=(x+" "); :}
+            | 	INT:x
+				{: 	RESULT=(x.toString()+" "); :}
+            | 	DOUBLE:x
+				{: 	RESULT=(x.toString()+" "); :}
+            | 	MINUS INT:x
+				{: 	RESULT=("-"+x.toString()+" "); :} %prec UMINUS
+            | 	MINUS DOUBLE:x
+				{: 	RESULT=("-"+x.toString()+" "); :} %prec UMINUS;
 
-id          ::= ID | ID SO INT SC | ID SO ID SC;
+id          ::= ID:x
+				{:	RESULT=x; :}
+			| 	ID:x SO INT:y SC 
+				{:	RESULT=x+"["+y+"]"; :}
+			| 	ID:x SO ID:y SC
+				{:	RESULT=x+"["+y+"]"; :};
