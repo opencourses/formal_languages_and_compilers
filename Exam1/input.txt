@@ -1,0 +1,15 @@
+YYY-26; 21:12:00; 22:12; 562; 09:12:14;
+*****
+0.79 dollari euro  : Usr.13.13 200.00, Usr.13.14 300.00, Usr.13.15 100.00;
+0.81 sterline euro : Usr.14.13 1000.00;
+1.00 euro euro     : Usr.15.13 50.00, Usr.15.14 80.00;
+*****
+Auction 1 : "Product *1" : 100 min ->
+       Usr.13.13 : 2  : 20.00 euro,
+       Usr.13.15 : 20 : 12.00 euro,
+       Usr.15.14 : 60 : 70.00 euro,
+       Usr.15.13 : 65 : 75.00 euro,
+       Usr.13.13 : 200: 100.00 euro;
+Auction 2 : "Product *2" : 20 min ->
+       Usr.15.14 : 10 : 20.00 euro,
+       Usr.13.14 : 12 : 20.00 euro;
