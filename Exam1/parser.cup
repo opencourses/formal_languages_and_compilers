@@ -1,0 +1,163 @@
+import java_cup.runtime.*;
+import java.io.*;
+import java.util.*;
+import java.text.*;
+
+
+parser code {:
+    private static final boolean DEBUG = true;
+    public static int error = 0;
+    public static FileWriter fileout;
+	public static int code = 0;
+	public static int date = 0;
+
+    @Override
+    public void report_error(String message, Object info) {
+        error++;
+        System.err.print(Main.file_name+":");
+        if (info instanceof Symbol) {
+            if (((Symbol)info).left != -1){
+                int line = (((Symbol)info).left)+1;
+                int column = (((Symbol)info).right)+1;
+                System.err.print(line+":"+column+":");
+            }
+        }
+        System.err.print(red(" error: "));
+        System.err.println(message);
+    }
+
+    private String red(String str) {
+        return "\u001B[31m" + str + "\u001B[0m";
+    }
+
+    @Override
+    public void syntax_error(Symbol cur_token){}
+
+    public Symbol getToken() {
+        return ((Symbol)stack.elementAt(tos));
+    }
+    public Object getToken(int position) {
+        return (((Symbol)stack.elementAt(tos+position)).value);
+    }
+
+    public void report(String message) {
+        report_error(message, getToken());
+    }
+    public void debug(String message) {
+        if (DEBUG)
+            System.out.println(red("DEBUG: ")+message);
+    }
+    public void output(String message){
+        try {
+            fileout.write(message);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        System.out.print(message);
+    }
+:};
+
+init with {:
+    try{
+        fileout = new FileWriter(new File("output.pasm"));
+    } catch(IOException e){
+        System.err.println(e);
+    }
+:};
+
+
+///////////////////////////////////
+// 	List of terminal symbols	 //
+///////////////////////////////////
+terminal TOKEN, VALUE, USER, ALPHA_WORD;
+terminal String TIME_SHORT, TIME_LONG, CODE;
+terminal AUCTION, EURO, INTEGER, QUOTE, ARROW, S, C, DOT, COMMA;
+///////////////////////////////////
+//  List of non terminal symbols //
+///////////////////////////////////
+non terminal ok, prog;
+non terminal header, header_list, header_item, hour, code_item;
+non terminal currencies, curr_list, curr_item, user_list, user_item;
+non terminal auctions, auc_list, auc_item, adv_list, adv_item;
+
+///////////////////////////////////
+//	List of precedence			 //
+///////////////////////////////////
+///////////////////////////////////
+// 	Start the grammar			 //
+///////////////////////////////////
+start with ok;
+
+ok			::= prog 
+				{:	if (parser.error > 0) {
+						System.out.println(parser.error+" errors generated"); 
+					} else {
+						System.out.println("The program is correct");
+					}
+				:};
+
+prog		::= header TOKEN currencies TOKEN auctions;
+
+header		::= header_list
+				{:	if (parser.code != 2) {
+						parser.report("the code token must appear exactly 2 times");
+					}
+					if (parser.date	<= 0) {
+						parser.report("the code token must appear al least 1 time");
+					}
+				:};
+header_list	::= header_list header_item | header_item;
+header_item ::= code_item S| hour S; // TODO validate the code and the hour
+code_item	::= CODE:x
+				{:	x = x.replaceAll("Y","");
+					x = x.replaceAll("X","");
+					Integer i = Integer.parseInt(x);
+					boolean valid = true;
+					if (i< -138 || i > 824 || (i % 2)!=0 )
+						valid = false;
+					if (valid == false)
+						parser.report("the suffix of the code is invalid");
+					parser.code++;
+				:};
+				
+hour		::= TIME_SHORT:x
+				{:	SimpleDateFormat format = new SimpleDateFormat("hh:mm");
+					boolean valid = true;
+					Date date = format.parse(x);
+					Date min = format.parse("08:31");
+					Date max = format.parse("23:21");
+					if ((min.getTime() - date.getTime()) > 0)
+						valid = false;
+					if ((date.getTime() - max.getTime()) > 0)
+						valid = false;
+					if (valid == false)
+						parser.report("the date is invalid");
+					parser.date++;
+				:}
+			| 	TIME_LONG:x
+				{:	SimpleDateFormat format = new SimpleDateFormat("hh:mm:ss");
+					boolean valid = true;
+					Date date = format.parse(x);
+					Date min = format.parse("08:31:12");
+					Date max = format.parse("23:21:10");
+					if ((min.getTime() - date.getTime()) > 0)
+						valid = false;
+					if ((date.getTime() - max.getTime()) > 0)
+						valid = false;
+					if (valid == false)
+						parser.report("the date is invalid");
+					parser.date++;
+				:};
+
+currencies	::= curr_list;
+curr_list	::= curr_list curr_item | curr_item curr_item curr_item;
+curr_item	::= VALUE ALPHA_WORD ALPHA_WORD C user_list S;
+user_list	::= user_list COMMA user_item | user_item | /* empty */;
+user_item	::= USER VALUE;
+
+auctions	::= auc_list | /*empty*/;
+auc_list	::= auc_list auc_item auc_item | auc_item auc_item;
+auc_item	::= AUCTION INTEGER C QUOTE QUOTE C INTEGER ALPHA_WORD ARROW
+				adv_list S;
+adv_list	::= adv_list COMMA adv_item | adv_item;
+adv_item	::= USER C INTEGER C VALUE EURO;

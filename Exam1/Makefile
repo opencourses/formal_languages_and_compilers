@@ -18,3 +18,8 @@ clean:
 	rm -f *.class
 	rm -f *.*~
 
+run:
+	java Main input.txt
+
+run_scanner:
+	java scanner input.txt
