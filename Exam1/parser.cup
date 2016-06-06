@@ -2,6 +2,7 @@ import java_cup.runtime.*;
 import java.io.*;
 import java.util.*;
 import java.text.*;
+import java.util.Hashtable;
 
 
 parser code {:
@@ -10,6 +11,8 @@ parser code {:
     public static FileWriter fileout;
 	public static int code = 0;
 	public static int date = 0;
+	
+	public Hashtable<String,Double> symTable;
 
     @Override
     public void report_error(String message, Object info) {
@@ -58,6 +61,7 @@ parser code {:
 :};
 
 init with {:
+	symTable=new Hashtable<String,Double>();
     try{
         fileout = new FileWriter(new File("output.pasm"));
     } catch(IOException e){
@@ -69,16 +73,21 @@ init with {:
 ///////////////////////////////////
 // 	List of terminal symbols	 //
 ///////////////////////////////////
-terminal TOKEN, VALUE, USER, ALPHA_WORD;
+terminal TOKEN, ALPHA_WORD, MIN;
 terminal String TIME_SHORT, TIME_LONG, CODE;
-terminal AUCTION, EURO, INTEGER, QUOTE, ARROW, S, C, DOT, COMMA;
+terminal AUCTION, EURO, QUOTE, ARROW, S, C, DOT, COMMA;
+terminal Double VALUE;
+terminal String USER;
+terminal Integer INTEGER;
 ///////////////////////////////////
 //  List of non terminal symbols //
 ///////////////////////////////////
 non terminal ok, prog;
 non terminal header, header_list, header_item, hour, code_item;
-non terminal currencies, curr_list, curr_item, user_list, user_item;
-non terminal auctions, auc_list, auc_item, adv_list, adv_item;
+non terminal currencies, curr_list, curr_item;
+non terminal Double user_list;
+non terminal Object[] user_item, adv_item, adv_list;
+non terminal auctions, auc_list, auc_item;
 
 ///////////////////////////////////
 //	List of precedence			 //
@@ -94,6 +103,7 @@ ok			::= prog
 					} else {
 						System.out.println("The program is correct");
 					}
+					parser.fileout.close();
 				:};
 
 prog		::= header TOKEN currencies TOKEN auctions;
@@ -152,12 +162,73 @@ hour		::= TIME_SHORT:x
 currencies	::= curr_list;
 curr_list	::= curr_list curr_item | curr_item curr_item curr_item;
 curr_item	::= VALUE ALPHA_WORD ALPHA_WORD C user_list S;
-user_list	::= user_list COMMA user_item | user_item | /* empty */;
-user_item	::= USER VALUE;
+user_list	::= user_list:x COMMA user_item:y
+				{:	parser.symTable.put((String)y[0],
+										x*((Double)y[1]));
+					RESULT=x;
+				:}
+			| 	user_item:x
+				{:	parser.symTable.put((String)x[0],
+						((Double)x[1])*(Double)parser.getToken(-4));
+					RESULT=(Double)parser.getToken(-4);
+				:}
+			| 	/* empty */;
+user_item	::= USER:x VALUE:y
+				{:	RESULT=new Object[2];
+					RESULT[0]=x;
+					RESULT[1]=y;
+				:};
 
 auctions	::= auc_list | /*empty*/;
 auc_list	::= auc_list auc_item auc_item | auc_item auc_item;
-auc_item	::= AUCTION INTEGER C QUOTE QUOTE C INTEGER ALPHA_WORD ARROW
-				adv_list S;
-adv_list	::= adv_list COMMA adv_item | adv_item;
-adv_item	::= USER C INTEGER C VALUE EURO;
+auc_item	::= AUCTION INTEGER:x {:parser.output("Auction "+x+":\n");:}
+				C QUOTE QUOTE C INTEGER MIN ARROW
+				adv_list:y S
+				{:	
+					parser.output("Winner is "+y[2]+" price "+y[1]+" euro\n");
+				:};
+adv_list	::= adv_list:y COMMA adv_item:x
+				{:	RESULT=y; // Set the inh value
+					Double actValue = parser.symTable.get((String)x[0]);
+					parser.output("  "+x[0]+": ");
+					if (((Double)x[2]) < (Double)RESULT[1]) {
+						parser.output("Error, advance less than the current auction value\n");
+					} else if ((Double)x[1] > (Double)RESULT[0]) {
+						parser.output("Error, advance out of time\n");
+					} else if ((Double)x[2] > actValue) {
+						parser.output("Error, available only "+actValue+" euro\n");
+					} else {
+						parser.output("New auction price "+x[2]+" euro\n");
+						RESULT[1] = x[2];
+						RESULT[2] = x[0];
+						parser.symTable.put((String)x[0],actValue-(Double)x[2]);
+					}
+				:}
+			|	adv_item:x
+				{:	RESULT=new Object[3];
+					RESULT[0] = new Double((Integer)parser.getToken(-3)); // Set the inh value
+					RESULT[1] = new Double(0.0); // This is the start adv value
+					RESULT[2] = "";
+					// This part should be equal here and in the list concatenation
+					Double actValue = parser.symTable.get((String)x[0]);
+					parser.output("  "+x[0]+": ");
+					if (((Double)x[2]) < (Double)RESULT[1]) {
+						parser.output("Error, advance less than the current auction value\n");
+					} else if ((Double)x[1] > (Double)RESULT[0]) {
+						parser.output("Error, advance out of time\n");
+					} else if ((Double)x[2] > actValue) {
+						parser.output("Error, available only "+actValue+" euro\n");
+					} else {
+						parser.output("New auction price "+x[2]+" euro\n");
+						RESULT[1] = x[2];
+						RESULT[2] = x[0];
+						parser.symTable.put((String)x[0],actValue-(Double)x[2]);
+					}
+				:};
+
+adv_item	::= USER:x C INTEGER:y C VALUE:z EURO
+				{:	RESULT=new Object[3];
+					RESULT[0]=x;
+					RESULT[1]=new Double(y);
+					RESULT[2]=z;
+				:};

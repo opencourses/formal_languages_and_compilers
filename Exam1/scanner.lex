@@ -63,8 +63,8 @@ value       = ({integer}\.{integer_two})
                  return symbol(sym.TOKEN);}
 } // end header state
 <currencies> {
-    {value}     {debug("VALUE"); return symbol(sym.VALUE); }
-    {user}      {debug("USER"+yytext()); return symbol(sym.USER); }
+    {value}     {debug("VALUE"); return symbol(sym.VALUE, Double.parseDouble(yytext())); }
+    {user}      {debug("USER"+yytext()); return symbol(sym.USER, yytext()); }
     {alpha_word} {debug("ALPHA_WORD"); return symbol(sym.ALPHA_WORD); }
     {token}     {debug("CHANGING TO STATE currencies");
                  yybegin(auctions);
@@ -74,10 +74,12 @@ value       = ({integer}\.{integer_two})
 <auctions> {
     "Auction"   {debug("AUCTION"); return symbol(sym.AUCTION); }
     "euro"      {debug("EURO"); return symbol(sym.EURO); }
+    "min"       {debug("MIN");  return symbol(sym.MIN);}
     {alpha_word} {debug("ALPHA_WORD"); return symbol(sym.ALPHA_WORD); }
-    {user}      {debug("USER"+yytext()); return symbol(sym.USER); }
-    {value}     {debug("VALUE"); return symbol(sym.VALUE); }
-    {integer}   {debug("INTEGER"); return symbol(sym.INTEGER); }
+    {user}      {debug("USER"+yytext()); return symbol(sym.USER, yytext()); }
+    {value}     {debug("VALUE"); return symbol(sym.VALUE, Double.parseDouble(yytext())); }
+    {integer}   {debug("INTEGER"); 
+                 return symbol(sym.INTEGER, Integer.parseInt(yytext())); }
 } // end auctions state
 \"          {debug("QUOTE"); yybegin(quote); return symbol(sym.QUOTE); }
 <quote>\"   {debug("QUOTE"); yybegin(auctions); return symbol(sym.QUOTE); }
